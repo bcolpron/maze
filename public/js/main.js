@@ -4,12 +4,16 @@ import { Input } from './input.js';
 import { Raycaster } from './raycaster.js';
 import { createBrickTexture, createSandTexture, createCeilingTexture } from './textures.js';
 
-const ROOM_SIZE = 16;
+const ROOM_SIZE = 8;
+const CELL_SIZE = 2;
 const VIEW_WIDTH = 480;
 const VIEW_HEIGHT = 300;
 
-const map = GridMap.squareRoom(ROOM_SIZE);
-const player = new Player(ROOM_SIZE / 2, ROOM_SIZE / 2, 0);
+const map = GridMap.squareRoom(ROOM_SIZE, CELL_SIZE);
+for (const [x, y] of [[2, 2], [5, 1], [1, 5], [5, 5]]) map.closeCell(x, y);
+
+const roomWorldSize = ROOM_SIZE * CELL_SIZE;
+const player = new Player(roomWorldSize / 2, roomWorldSize / 2, 0);
 const input = new Input();
 const raycaster = new Raycaster(document.getElementById('view'), VIEW_WIDTH, VIEW_HEIGHT, {
   wall: createBrickTexture(),

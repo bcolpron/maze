@@ -30,17 +30,8 @@ export class Player {
     if (speed > max) { dx *= max / speed; dy *= max / speed; }
 
     const nx = this.x + dx * dt;
-    if (!this.blocked(nx, this.y, map)) this.x = nx;
+    if (!map.collides(nx, this.y, RADIUS)) this.x = nx;
     const ny = this.y + dy * dt;
-    if (!this.blocked(this.x, ny, map)) this.y = ny;
-  }
-
-  blocked(x, y, map) {
-    return (
-      map.isWall(Math.floor(x - RADIUS), Math.floor(y - RADIUS)) ||
-      map.isWall(Math.floor(x + RADIUS), Math.floor(y - RADIUS)) ||
-      map.isWall(Math.floor(x - RADIUS), Math.floor(y + RADIUS)) ||
-      map.isWall(Math.floor(x + RADIUS), Math.floor(y + RADIUS))
-    );
+    if (!map.collides(this.x, ny, RADIUS)) this.y = ny;
   }
 }

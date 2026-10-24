@@ -1,4 +1,5 @@
 import { TEX_SIZE } from './textures.js';
+import { E, W, N, S } from './map.js';
 
 const FOV_SCALE = 0.75;
 const AMBIENT = 0.1;
@@ -79,22 +80,32 @@ export class Raycaster {
       const cameraX = (2 * x) / w - 1;
       const rayX = dirX + planeX * cameraX;
       const rayY = dirY + planeY * cameraX;
-      let mapX = Math.floor(player.x);
-      let mapY = Math.floor(player.y);
-      const deltaX = Math.abs(1 / rayX);
-      const deltaY = Math.abs(1 / rayY);
+      const cellSize = map.cellSize;
+      let mapX = Math.floor(player.x / cellSize);
+      let mapY = Math.floor(player.y / cellSize);
+      const deltaX = cellSize / Math.abs(rayX);
+      const deltaY = cellSize / Math.abs(rayY);
       const stepX = rayX < 0 ? -1 : 1;
       const stepY = rayY < 0 ? -1 : 1;
-      let sideX = (rayX < 0 ? player.x - mapX : mapX + 1 - player.x) * deltaX;
-      let sideY = (rayY < 0 ? player.y - mapY : mapY + 1 - player.y) * deltaY;
-      let side = 0;
+      const edgeX = stepX < 0 ? W : E;
+      const edgeY = stepY < 0 ? N : S;
+      let sideX = (rayX < 0 ? player.x - mapX * cellSize : (mapX + 1) * cellSize - player.x) / Math.abs(rayX);
+      let sideY = (rayY < 0 ? player.y - mapY * cellSize : (mapY + 1) * cellSize - player.y) / Math.abs(rayY);
+      let side;
+      let dist;
 
-      while (!map.isWall(mapX, mapY)) {
-        if (sideX < sideY) { sideX += deltaX; mapX += stepX; side = 0; }
-        else { sideY += deltaY; mapY += stepY; side = 1; }
+      // Walk cell boundaries; a hit is a wall on the edge being crossed.
+      for (;;) {
+        if (sideX < sideY) {
+          if (map.hasWall(mapX, mapY, edgeX)) { side = 0; dist = sideX; break; }
+          sideX += deltaX;
+          mapX += stepX;
+        } else {
+          if (map.hasWall(mapX, mapY, edgeY)) { side = 1; dist = sideY; break; }
+          sideY += deltaY;
+          mapY += stepY;
+        }
       }
-
-      const dist = side === 0 ? sideX - deltaX : sideY - deltaY;
       depth[x] = dist;
 
       const lineHeight = h / dist;
