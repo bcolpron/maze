@@ -1,0 +1,124 @@
+import { TEX_SIZE } from './textures.js';
+
+const FOV_SCALE = 0.75;
+const AMBIENT = 0.1;
+const FALLOFF = 0.03;
+const SIDE_DIM = 0.72;
+const MASK = TEX_SIZE - 1;
+
+const light = (dist) => Math.max(AMBIENT, 1 / (1 + dist * dist * FALLOFF));
+
+export class Raycaster {
+  constructor(canvas, width, height, textures) {
+    this.w = width;
+    this.h = height;
+    this.textures = textures;
+    canvas.width = width;
+    canvas.height = height;
+    this.ctx = canvas.getContext('2d');
+    this.image = this.ctx.createImageData(width, height);
+    this.px = this.image.data;
+    this.px.fill(255);
+    this.depth = new Float32Array(width);
+  }
+
+  render(player, map) {
+    this.drawFloorAndCeiling(player);
+    this.drawWalls(player, map);
+    this.ctx.putImageData(this.image, 0, 0);
+  }
+
+  drawFloorAndCeiling(player) {
+    const { w, h, px } = this;
+    const floor = this.textures.floor.data;
+    const ceil = this.textures.ceiling.data;
+    const dirX = Math.cos(player.angle);
+    const dirY = Math.sin(player.angle);
+    const planeX = -dirY * FOV_SCALE;
+    const planeY = dirX * FOV_SCALE;
+    const rx0 = dirX - planeX;
+    const ry0 = dirY - planeY;
+    const half = h / 2;
+
+    for (let y = h >> 1; y < h; y++) {
+      const rowDist = half / (y - half + 0.5);
+      const s = light(rowDist);
+      const stepX = (rowDist * 2 * planeX) / w;
+      const stepY = (rowDist * 2 * planeY) / w;
+      let fx = player.x + rowDist * rx0;
+      let fy = player.y + rowDist * ry0;
+      let floorIdx = y * w * 4;
+      let ceilIdx = (h - 1 - y) * w * 4;
+
+      for (let x = 0; x < w; x++) {
+        const t = ((((fy * TEX_SIZE) & MASK) * TEX_SIZE) + ((fx * TEX_SIZE) & MASK)) * 3;
+        px[floorIdx] = floor[t] * s;
+        px[floorIdx + 1] = floor[t + 1] * s;
+        px[floorIdx + 2] = floor[t + 2] * s;
+        px[ceilIdx] = ceil[t] * s;
+        px[ceilIdx + 1] = ceil[t + 1] * s;
+        px[ceilIdx + 2] = ceil[t + 2] * s;
+        fx += stepX;
+        fy += stepY;
+        floorIdx += 4;
+        ceilIdx += 4;
+      }
+    }
+  }
+
+  drawWalls(player, map) {
+    const { w, h, px, depth } = this;
+    const wall = this.textures.wall.data;
+    const dirX = Math.cos(player.angle);
+    const dirY = Math.sin(player.angle);
+    const planeX = -dirY * FOV_SCALE;
+    const planeY = dirX * FOV_SCALE;
+    const half = h / 2;
+
+    for (let x = 0; x < w; x++) {
+      const cameraX = (2 * x) / w - 1;
+      const rayX = dirX + planeX * cameraX;
+      const rayY = dirY + planeY * cameraX;
+      let mapX = Math.floor(player.x);
+      let mapY = Math.floor(player.y);
+      const deltaX = Math.abs(1 / rayX);
+      const deltaY = Math.abs(1 / rayY);
+      const stepX = rayX < 0 ? -1 : 1;
+      const stepY = rayY < 0 ? -1 : 1;
+      let sideX = (rayX < 0 ? player.x - mapX : mapX + 1 - player.x) * deltaX;
+      let sideY = (rayY < 0 ? player.y - mapY : mapY + 1 - player.y) * deltaY;
+      let side = 0;
+
+      while (!map.isWall(mapX, mapY)) {
+        if (sideX < sideY) { sideX += deltaX; mapX += stepX; side = 0; }
+        else { sideY += deltaY; mapY += stepY; side = 1; }
+      }
+
+      const dist = side === 0 ? sideX - deltaX : sideY - deltaY;
+      depth[x] = dist;
+
+      const lineHeight = h / dist;
+      const start = Math.max(0, Math.floor(half - lineHeight / 2));
+      const end = Math.min(h - 1, Math.floor(half + lineHeight / 2));
+
+      let wallX = side === 0 ? player.y + dist * rayY : player.x + dist * rayX;
+      wallX -= Math.floor(wallX);
+      let texX = Math.floor(wallX * TEX_SIZE);
+      if ((side === 0 && rayX > 0) || (side === 1 && rayY < 0)) texX = MASK - texX;
+
+      const texStep = TEX_SIZE / lineHeight;
+      let texPos = (start - half + lineHeight / 2) * texStep;
+      const s = light(dist) * (side === 1 ? SIDE_DIM : 1);
+
+      let idx = (start * w + x) * 4;
+      for (let y = start; y <= end; y++) {
+        const t = (((texPos & MASK) * TEX_SIZE) + texX) * 3;
+        texPos += texStep;
+        px[idx] = wall[t] * s;
+        px[idx + 1] = wall[t + 1] * s;
+        px[idx + 2] = wall[t + 2] * s;
+        idx += w * 4;
+      }
+    }
+  }
+}

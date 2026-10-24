@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maze</title>
+  <link rel="icon" href="data:,">
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    body { display: flex; align-items: center; justify-content: center; }
+    canvas {
+      width: min(100vw, 160vh);
+      aspect-ratio: 8 / 5;
+      image-rendering: pixelated;
+      display: block;
+    }
+    #hint {
+      position: fixed; left: 0; right: 0; bottom: 8px; text-align: center;
+      font: 13px/1.4 monospace; color: #cbb98f; opacity: .8; pointer-events: none;
+      text-shadow: 0 1px 2px #000;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="view"></canvas>
+  <div id="hint">&uarr; &darr; move &nbsp;·&nbsp; &larr; &rarr; turn &nbsp;·&nbsp; Shift + &larr; &rarr; strafe</div>
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>
