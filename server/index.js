@@ -19,8 +19,21 @@ const io = new Server(server);
 const { map, spawn } = createDungeon();
 const DIRECTIONS = [N, E, S, W];
 
+const players = new Map();
+
 io.on('connection', (socket) => {
   socket.emit('dungeon:state', { ...map.toState(), spawn });
+  socket.emit('players:state', [...players].map(([id, p]) => ({ id, ...p })));
+
+  socket.on('player:update', ({ x, y, angle } = {}) => {
+    if (![x, y, angle].every(Number.isFinite)) return;
+    players.set(socket.id, { x, y, angle });
+    socket.broadcast.emit('player:update', { id: socket.id, x, y, angle });
+  });
+
+  socket.on('disconnect', () => {
+    if (players.delete(socket.id)) io.emit('player:left', socket.id);
+  });
 
   socket.on('dungeon:toggleEdge', ({ x, y, dir } = {}) => {
     if (!Number.isInteger(x) || !Number.isInteger(y) || !DIRECTIONS.includes(dir)) return;

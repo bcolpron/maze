@@ -10,7 +10,9 @@ const ctx = canvas.getContext('2d');
 
 let hover = null;
 
-const { map, spawn, toggleEdge } = await connectDungeon({ onChange: () => draw() });
+let ready = false;
+
+const { map, players, toggleEdge } = await connectDungeon({ onChange: () => ready && draw() });
 
 canvas.width = map.width * CELL_PX + MARGIN * 2;
 canvas.height = map.height * CELL_PX + MARGIN * 2;
@@ -71,15 +73,17 @@ function draw() {
   }
 
   const scale = CELL_PX / map.cellSize;
-  const px = MARGIN + spawn.x * scale;
-  const py = MARGIN + spawn.y * scale;
-  ctx.fillStyle = '#3aa655';
-  ctx.beginPath();
-  ctx.arc(px, py, 8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.strokeStyle = '#3aa655';
-  ctx.lineWidth = 3;
-  strokeSegment([px, py, px + Math.cos(spawn.angle) * 22, py + Math.sin(spawn.angle) * 22]);
+  for (const { x, y, angle } of players.values()) {
+    const px = MARGIN + x * scale;
+    const py = MARGIN + y * scale;
+    ctx.fillStyle = '#3aa655';
+    ctx.beginPath();
+    ctx.arc(px, py, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#3aa655';
+    ctx.lineWidth = 3;
+    strokeSegment([px, py, px + Math.cos(angle) * 22, py + Math.sin(angle) * 22]);
+  }
 }
 
 // The edge of the clicked cell that is nearest to the pointer, or null when
@@ -115,4 +119,5 @@ canvas.addEventListener('click', (event) => {
   if (edge) toggleEdge(edge.x, edge.y, edge.dir);
 });
 
+ready = true;
 draw();
