@@ -1,13 +1,13 @@
 import { Player } from './player.js';
 import { Input } from './input.js';
 import { Raycaster } from './raycaster.js';
-import { createDungeon } from './dungeon.js';
+import { connectDungeon } from './dungeon-client.js';
 import { createBrickTexture, createSandTexture, createCeilingTexture } from './textures.js';
 
 const VIEW_WIDTH = 480;
 const VIEW_HEIGHT = 300;
 
-const { map, spawn } = createDungeon();
+const { map, spawn } = await connectDungeon();
 const player = new Player(spawn.x, spawn.y, spawn.angle);
 const input = new Input();
 const raycaster = new Raycaster(document.getElementById('view'), VIEW_WIDTH, VIEW_HEIGHT, {

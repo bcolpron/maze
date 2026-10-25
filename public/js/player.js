@@ -29,9 +29,11 @@ export class Player {
     const max = move !== 0 ? MOVE_SPEED : STRAFE_SPEED;
     if (speed > max) { dx *= max / speed; dy *= max / speed; }
 
+    // A wall can be closed on top of the player; let them walk out of it.
+    const embedded = map.collides(this.x, this.y, RADIUS);
     const nx = this.x + dx * dt;
-    if (!map.collides(nx, this.y, RADIUS)) this.x = nx;
+    if (embedded || !map.collides(nx, this.y, RADIUS)) this.x = nx;
     const ny = this.y + dy * dt;
-    if (!map.collides(this.x, ny, RADIUS)) this.y = ny;
+    if (embedded || !map.collides(this.x, ny, RADIUS)) this.y = ny;
   }
 }

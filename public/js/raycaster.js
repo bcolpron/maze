@@ -1,5 +1,5 @@
 import { TEX_SIZE } from './textures.js';
-import { E, W, N, S } from './map.js';
+import { E, W, N, S } from '/shared/map.js';
 
 const FOV_SCALE = 0.75;
 const AMBIENT = 0.1;

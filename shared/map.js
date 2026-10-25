@@ -26,13 +26,41 @@ export class GridMap {
     return (this.cells[y * this.width + x] & dir) !== 0;
   }
 
-  // Walls are shared: the facing side of the neighbouring cell is set too.
-  setWall(x, y, dir) {
-    if (this.inBounds(x, y)) this.cells[y * this.width + x] |= dir;
+  isBoundaryEdge(x, y, dir) {
     const [dx, dy] = STEP[dir];
-    const nx = x + dx;
-    const ny = y + dy;
-    if (this.inBounds(nx, ny)) this.cells[ny * this.width + nx] |= OPPOSITE[dir];
+    return !this.inBounds(x + dx, y + dy);
+  }
+
+  // Walls are shared: the facing side of the neighbouring cell is kept in sync.
+  // The dungeon limits can never be opened; returns false when nothing was applied.
+  setEdge(x, y, dir, closed) {
+    if (!this.inBounds(x, y)) return false;
+    if (!closed && this.isBoundaryEdge(x, y, dir)) return false;
+    const [dx, dy] = STEP[dir];
+    this.#apply(x, y, dir, closed);
+    this.#apply(x + dx, y + dy, OPPOSITE[dir], closed);
+    return true;
+  }
+
+  setWall(x, y, dir) {
+    this.setEdge(x, y, dir, true);
+  }
+
+  #apply(x, y, dir, closed) {
+    if (!this.inBounds(x, y)) return;
+    const i = y * this.width + x;
+    if (closed) this.cells[i] |= dir;
+    else this.cells[i] &= ~dir;
+  }
+
+  toState() {
+    return { width: this.width, height: this.height, cellSize: this.cellSize, cells: Array.from(this.cells) };
+  }
+
+  static fromState(state) {
+    const map = new GridMap(state.width, state.height, state.cellSize);
+    map.cells.set(state.cells);
+    return map;
   }
 
   closeCell(x, y) {
